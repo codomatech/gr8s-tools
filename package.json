@@ -5,6 +5,10 @@
     "publishConfig": {
         "access": "public"
     },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/codomatech/gr8s-tools"
+    },
     "description": "A set of tools and utilities to support the operation of gr8s server (https://gr8s-server.codoma.tech/).",
     "files": [
         "README.md",
