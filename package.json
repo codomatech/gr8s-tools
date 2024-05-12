@@ -1,0 +1,58 @@
+{
+    "name": "@codomatech/gr8s-tools",
+    "version": "0.0.7",
+    "license": "MIT",
+    "publishConfig": {
+        "access": "public"
+    },
+    "description": "A set of tools and utilities to support the operation of gr8s server (https://gr8s-server.codoma.tech/).",
+    "files": [
+        "README.md",
+        "dist/*/*.js"
+    ],
+    "bin": {
+        "gr8s-prepare-index-html": "./dist/cli/main.js"
+    },
+    "targets": {
+        "cli": {
+            "context": "node",
+            "includeNodeModules": [
+                "chalk"
+            ],
+            "source": "src/main.js"
+        },
+        "s3s-crawl-assistant": {
+            "context": "browser",
+            "optimize": false,
+            "outputFormat": "global",
+            "source": "src/s3s-crawl-assistant.js"
+        }
+    },
+    "mode": "usage",
+    "scripts": {
+        "build": "parcel build",
+        "lint": "eslint src/main.js"
+    },
+    "dependencies": {
+        "chalk": "^5.3.0",
+        "commander": "^12.0.0",
+        "html-minifier-terser": "^7.2.0",
+        "htmlparser2": "^9.1.0",
+        "postmate": "^1.5.2"
+    },
+    "devDependencies": {
+        "@eslint/js": "^9.2.0",
+        "buffer": "^5.5.0||^6.0.0",
+        "eslint": "^9.2.0",
+        "events": "^3.1.0",
+        "globals": "^15.2.0",
+        "os-browserify": "^0.3.0",
+        "parcel": "^2.12.0",
+        "path-browserify": "^1.0.0",
+        "process": "^0.11.10",
+        "url": "^0.11.0"
+    },
+    "@parcel/resolver-default": {
+        "packageExports": true
+    }
+}
