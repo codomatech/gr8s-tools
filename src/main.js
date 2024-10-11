@@ -83,11 +83,17 @@ class HtmlScanner {
                     this.lines.push(`{% for link in additional_links %}
     <a class="add-link" href="{{ link.url }}">{{ link.title }}</a>
     {% endfor %}`)
+                const jscode = []
                 if (this.opts.removePrerenderedContent === true) {
+                    jscode.push(`document.querySelectorAll('.prerendered-text').forEach((e) => e.remove())`)
+                }
+                if (this.opts.removePrerenderedLinks === true) {
+                    jscode.push(`document.querySelectorAll('.add-link').forEach((e) => e.remove())`)
+                }
+                if (jscode.length > 0) {
                     this.lines.push(`  <script>
   document.addEventListener("DOMContentLoaded", function() {
-    document.querySelectorAll('.prerendered-text').forEach((e) => e.remove())
-    document.querySelectorAll('.add-link').forEach((e) => e.remove())
+    ${jscode.join('\n    ')}
   })
   </script>`)
                 }
@@ -147,7 +153,8 @@ async function main() {
 
     program
         .option('-f, --index <char>', 'the path of the site index.html. If not provided, it will be guessed')
-        .option('-js, --javascript', 'switch on adding Javascript code to remove pre-rendered elements on page load')
+        .option('-rc, --js_remove_contents', 'add JS code to remove pre-rendered content on page load')
+        .option('-rl, --js_remove_links', 'add JS code to remove pre-rendered links on page load')
         .option('-m', 'switch on minifying the output html')
         .option('-v, --verbose', 'switch on verbose output')
 
@@ -177,7 +184,10 @@ async function main() {
         options.index = found
     }
 
-    const scanner = new HtmlScanner({removePrerenderedContent: options.javascript === true})
+    const scanner = new HtmlScanner({
+        removePrerenderedContent: options.js_remove_contents === true,
+        removePrerenderedLinks: options.js_remove_links === true,
+    })
 
     const parser = new htmlparser2.Parser(scanner);
     let html = fs.readFileSync(options.index, 'utf-8');
