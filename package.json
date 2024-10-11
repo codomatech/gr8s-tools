@@ -23,6 +23,7 @@
             "includeNodeModules": [
                 "chalk"
             ],
+            "isLibrary": false,
             "source": "src/main.js"
         },
         "s3s-crawl-assistant": {
@@ -35,7 +36,7 @@
     "mode": "usage",
     "scripts": {
         "build": "parcel build",
-        "lint": "eslint src/main.js"
+        "lint": "eslint src/main.js src/s3s-crawl-assistant.js"
     },
     "dependencies": {
         "chalk": "^5.3.0",
