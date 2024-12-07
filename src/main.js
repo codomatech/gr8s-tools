@@ -6,6 +6,10 @@ import { program } from 'commander'
 import { minify } from 'html-minifier-terser'
 
 
+const MAIN_PREFIX = `{% if gr8s_html_payload %}{{ gr8s_html_payload }}{% else %}<div class="prerendered-text">{{ body_text }}</div>{% endif %}
+{% if gr8s_json_payload %}<script id="gr8s-json-payload" type="application/json">{{ gr8s_json_payload }}</script>{% endif %}
+`
+
 class HtmlScanner {
     constructor(opts) {
         this.lines = []
@@ -65,7 +69,7 @@ class HtmlScanner {
                 break
             }
             case 'main': {
-                this.lines.push(`<div class="prerendered-text">{{ body_text }}</div>`)
+                this.lines.push(MAIN_PREFIX)
                 this.bodyTextAdded = true
                 break
             }
@@ -78,7 +82,7 @@ class HtmlScanner {
             }
             case 'body': {
                 if (this.bodyTextAdded !== true)
-                    this.lines.push(`<div class="prerendered-text">{{ body_text }}</div>`)
+                    this.lines.push(MAIN_PREFIX)
                 if (this.footerLinksAdded !== true)
                     this.lines.push(`{% for link in additional_links %}
     <a class="add-link" href="{{ link.url }}">{{ link.title }}</a>
