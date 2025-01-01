@@ -9,5 +9,10 @@ import Postmate from 'postmate';
         const handshake = new Postmate.Model({
             pageSource: () => document.body.innerHTML
         })
+        try {
+            window.s3s_crawl_assistant_handshake = handshake
+        } catch(e) {
+            console.debug('minor error: failed to set handshake to global variable', e)
+        }
     }
 })()
