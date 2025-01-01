@@ -4,6 +4,11 @@ import {diff_match_patch} from './diff_match_patch_uncompressed.js'
 import chalk from 'chalk';
 import { program } from 'commander'
 import { minify } from 'html-minifier-terser'
+import * as prompts from '@clack/prompts';
+import * as tar from 'tar'
+import * as $path from 'path'
+import * as tmp from 'tmp'
+import { glob } from 'glob'
 
 
 const MAIN_PREFIX = `{% if gr8s_html_payload %}{{ gr8s_html_payload }}{% else %}<div class="prerendered-text">{{ body_text }}</div>{% endif %}
@@ -33,7 +38,7 @@ class HtmlScanner {
     }
 
     onopentag(tagname, attributes) {
-        //console.log('attributes=', attributes)
+        //console.debug('attributes=', attributes)
         const attrs = this.mapAttributes(tagname, attributes)
         this.lines.push(`<${tagname} ${attrs}>`)
         if (tagname.toLowerCase() === 'title') {
@@ -110,10 +115,15 @@ class HtmlScanner {
 }
 
 
+function isValidDomain(domain) {
+    const regex = /^(?![\d.]+)((?!-))(xn--)?[a-z0-9][a-z0-9-_]{0,61}[a-z0-9]{0,1}\.(xn--)?([a-z0-9._-]{1,61}|[a-z0-9-]{1,30})$/m
+    // TODO validate tld
+    return domain.match(regex)
+}
+
+
 function _simplify(s) {
     return s.split(/\n/g).map((l) => l.trim()).join('\n')
-    //return s
-    //return s.replace(/[\s\n]+/gm, ' ')
 }
 
 
@@ -149,7 +159,17 @@ function prettyPrintDiff(diff) {
     return lines.join('')
 }
 
+async function compressDirectory(dir, files) {
+    const f = tmp.fileSync({prefix: 'gr8s-dep-tar-'})
+    console.debug(`created tmp file ${f.name}`)
+    await tar.create({cwd: dir, file: f.name, strict: true, portable: true, noPax: false}, files)
+    const fdata = fs.readFileSync(f.name, {encoding: 'base64'})
+    return fdata
+}
+
 async function main() {
+    const S3S_CLOUD_API = 'https://s3sapi-gr8s.b-cdn.net'
+
     program
         .name('gr8s-prepare-index-html')
         .description(`A command to prepare your html code to use gr8s server. For more details, check:
@@ -160,6 +180,7 @@ async function main() {
         .option('-rc, --js_remove_contents', 'add JS code to remove pre-rendered content on page load')
         .option('-rl, --js_remove_links', 'add JS code to remove pre-rendered links on page load')
         .option('-m', 'switch on minifying the output html')
+        .option('--deploy', 'deploy frontend assets to gr8s cloud. More info at https://s3.app.codoma.tech/')
         .option('-v, --verbose', 'switch on verbose output')
 
 
@@ -167,8 +188,77 @@ async function main() {
     const options = program.opts();
     //console.debug('options=', options)
 
+    prompts.intro('gr8s-prepare-index-html');
+
+    let domain = process.env.S3S_CLOUD_DOMAIN, apiKey = process.env.S3S_CLOUD_API_KEY
+    if (options.deploy) {
+        let verified = false
+        prompts.log.step('I will deploy your frontend assets to gr8s cloud')
+        while (!verified) {
+            domain || prompts.log.info('you need to register an account with your domain name at https://s3.app.codoma.tech/.\n' +
+                            'Optionally you can provide your credentials using environment variables S3S_CLOUD_DOMAIN and S3S_CLOUD_API_KEY')
+            domain = domain || await prompts.text({
+                message: 'What is your registerd domain name?',
+                placeholder: 'e.g. www.something.com',
+                initialValue: '',
+                validate(value) {
+                    if (!isValidDomain(value)) {
+                        return `domain name is invalid`;
+                    }
+                    // TODO validate tld
+                },
+            });
+            if (prompts.isCancel(domain)) {
+                prompts.cancel('Operation cancelled.')
+                return
+            }
+            apiKey = apiKey || await prompts.text({
+                message: 'What is your API key?',
+                placeholder: 'e.g. abefc2095ef01a23fdd',
+                initialValue: '',
+                validate(value) {
+                    const regex = /^[0-9a-f]+$/m
+                    if (!value.match(regex)) {
+                        return `invalid API key`
+                    }
+
+                    if (value.length < 16) {
+                        return 'API key looks too short'
+                    }
+                },
+            });
+            if (prompts.isCancel(apiKey)) {
+                prompts.cancel('Operation cancelled.')
+                return
+            }
+
+            const result = await fetch(`${S3S_CLOUD_API}/site/${domain}/verified`, {
+                headers: {
+                    'cache-control': 'no-cache',
+                    'pragma': 'no-cache',
+                    'x-api-key': apiKey
+                },
+                'method': 'GET',
+            });
+            //console.debug('result', result)
+            verified = result.status === 200
+            if (!verified) {
+                domain = ''
+                apiKey = ''
+                prompts.log.error('It seems the login details are not correct!')
+                prompts.log.info('From here you can either retry with correct credentials, or abort and call this script without the deploy option')
+                const retry = await prompts.confirm({message: 'Retry with correct credentials?'})
+                if (!retry || prompts.isCancel(retry)) {
+                    prompts.cancel('Aborting due to invalid deployment credentials')
+                    return
+                }
+            }
+        }
+        prompts.log.success(`logged in to S³ cloud with domain ${domain}`)
+    }
+
     if (!options.index) {
-        console.log(chalk.bold.blue('No index.html path provided. Trying to guess ...'))
+        prompts.log.info('No index.html path provided. Trying to guess ...')
         const paths = [
             {framework: 'next.js', path: 'out/index.html'},
             {framework: 'nuxt.js', path: 'dist/index.html'},
@@ -177,15 +267,15 @@ async function main() {
         for (const {framework, path} of paths) {
             if (fs.existsSync(path)) {
                 found = path
-                console.log(chalk.bold.green(`Found one in ${path}, you (probably) use ${framework}`))
+                prompts.log.success(`Found one in ${path}, you (probably) use ${framework}`)
                 break
             }
         }
         if (!found) {
-            console.error('Failed to find index.html, please specify it explicity')
+            prompts.log.error('Failed to find index.html, please specify it explicity')
             return
         }
-        options.index = found
+        options.index  =found
     }
 
     const scanner = new HtmlScanner({
@@ -199,7 +289,8 @@ async function main() {
     try {
         parser.write(html);
     } catch (e) {
-        console.error(chalk.bold.red(`Error processing the file:\n${e.message}`))
+        prompts.log.error(`Error processing the file:\n\t${e.message}`)
+        prompts.outro('aborting due to processing errors')
         return
     }
     parser.end();
@@ -221,8 +312,8 @@ async function main() {
 
 
     if (options.verbose) {
-        console.log(chalk.bold.blue('Enriched index.html. Here is the diff:\n\t>'),
-                    prettyPrintDiff(diff).replace(/\n/g, '\n\t> '))
+        prompts.log.info('Enriched index.html. Here is the diff:')
+        prompts.log.info('\t' + prettyPrintDiff(diff).replace(/\n/g, '\n\t> '))
     }
     const bkup = options.index + '.bak'
     fs.writeFileSync(bkup, html)
@@ -240,8 +331,45 @@ async function main() {
     }
     fs.writeFileSync(options.index, transformed)
 
-    console.log(chalk.bold.blue(`The original source was backed up in ${bkup}`))
-    console.log(chalk.bold.green(`Your gr8s-enabled html file is in ${options.index}.`))
+    prompts.log.info(chalk.bold.blue(`The original source was backed up in ${bkup}`))
+    prompts.log.success(`Your gr8s-enabled html file is in ${options.index}.`)
+
+
+    if (options.deploy) {
+        const dir = $path.dirname(options.index)
+        let files = await glob(`${dir}/*`)
+        files = files.map((f) => f.slice(dir.length+1))
+        //console.debug('files=', files)
+        //tmp.setGracefulCleanup()
+        /*
+        const f = tmp.fileSync()
+        console.debug(`created tmp file ${f.name}`)
+        await tar.create({cwd: dir, file: f.name, strict: true, portable: true, noPax: false}, files)
+        const fdata = fs.readFileSync(f.name, {encoding: 'base64'})
+        */
+        const fdata = await compressDirectory(dir, files)
+        console.debug(fdata.slice(0, 32))
+        console.debug(`create tar file data ${fdata.slice(0, 64)}`)
+
+
+        const path = '@gr8s-cloud-files'
+        const res = await fetch(`${S3S_CLOUD_API}/site/${domain}/file/${path}`, {
+            method: 'POST',
+            headers: {
+                'x-api-key': apiKey,
+                'Content-Type': 'text/plain',
+            },
+            body: fdata,
+        })
+        console.debug('result status', res.status)
+        console.debug('result text', await res.text())
+
+
+    }
+
+
+
+    prompts.outro('processing concluded successfully')
 }
 
 
