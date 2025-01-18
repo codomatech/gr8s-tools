@@ -1,6 +1,6 @@
 {
     "name": "@codomatech/gr8s-tools",
-    "version": "0.0.13",
+    "version": "0.0.15",
     "license": "MIT",
     "publishConfig": {
         "access": "public"
@@ -15,7 +15,7 @@
         "dist/*/*.js"
     ],
     "bin": {
-        "gr8s-prepare-index-html": "./dist/cli/main.js"
+        "gr8s-cli": "./dist/cli/main.js"
     },
     "targets": {
         "cli": {
@@ -46,6 +46,7 @@
         "html-minifier-terser": "^7.2.0",
         "htmlparser2": "^9.1.0",
         "postmate": "^1.5.2",
+        "sleep-await": "^1.0.2",
         "tar": "^7.4.3",
         "tmp": "^0.2.3"
     },

@@ -1,14 +1,15 @@
-import * as htmlparser2 from "htmlparser2";
-import * as fs from 'fs';
+import * as htmlparser2 from "htmlparser2"
+import * as fs from 'fs'
 import {diff_match_patch} from './diff_match_patch_uncompressed.js'
-import chalk from 'chalk';
+import chalk from 'chalk'
 import { program } from 'commander'
 import { minify } from 'html-minifier-terser'
-import * as prompts from '@clack/prompts';
+import * as prompts from '@clack/prompts'
 import * as tar from 'tar'
 import * as $path from 'path'
 import * as tmp from 'tmp'
 import { glob } from 'glob'
+import { createDomainWithPOW } from './pow.js'
 
 
 const MAIN_PREFIX = `{% if gr8s_html_payload %}{{ gr8s_html_payload }}{% else %}<div class="prerendered-text">{{ body_text }}</div>{% endif %}
@@ -161,23 +162,24 @@ function prettyPrintDiff(diff) {
 
 async function compressDirectory(dir, files) {
     const f = tmp.fileSync({prefix: 'gr8s-dep-tar-'})
-    console.debug(`created tmp file ${f.name}`)
+    //console.debug(`created tmp file ${f.name}`)
     await tar.create({cwd: dir, file: f.name, strict: true, portable: true, noPax: false}, files)
     const fdata = fs.readFileSync(f.name, {encoding: 'base64'})
     return fdata
 }
 
 async function main() {
-    const S3S_CLOUD_API = 'https://s3sapi-gr8s.b-cdn.net'
+    const S3S_CLOUD_API = process.env.S3S_API_ADDRESS || 'https://s3sapi-gr8s.b-cdn.net'
 
     program
-        .name('gr8s-prepare-index-html')
-        .description(`A command to prepare your html code to use gr8s server. For more details, check:
+        .name('gr8s-cli')
+        .description(`A command to prepare your html code to use with gr8s server. For more details, check:
     https://gr8s-server.codoma.tech`)
 
     program
         .option('-f, --index <char>', 'the path of the site index.html. If not provided, it will be guessed')
         .option('-rc, --js_remove_contents', 'add JS code to remove pre-rendered content on page load')
+        .option('--signup', 'create a quick account on s3 cloud')
         .option('-rl, --js_remove_links', 'add JS code to remove pre-rendered links on page load')
         .option('-m', 'switch on minifying the output html')
         .option('--deploy', 'deploy frontend assets to gr8s cloud. More info at https://s3.app.codoma.tech/')
@@ -188,9 +190,70 @@ async function main() {
     const options = program.opts();
     //console.debug('options=', options)
 
-    prompts.intro('gr8s-prepare-index-html');
+    prompts.intro('gr8s-cli');
 
-    let domain = process.env.S3S_CLOUD_DOMAIN, apiKey = process.env.S3S_CLOUD_API_KEY
+    const newAccount = {}
+    if (options.signup) {
+        prompts.log.step('I will create a quick account for you on s3 cloud')
+        let confirm = await prompts.confirm({message: 'proceed with account creation?'})
+        if (prompts.isCancel(confirm)) {
+            prompts.cancel('aborted')
+            return
+        }
+        if (!confirm || prompts.isCancel(confirm)) {
+            prompts.log.info('no account will be created.')
+        } else {
+            let domain, nonce
+            await prompts.tasks([
+                {
+                    title: 'we are finding a unique domain for you, this may take some time ...',
+                    task: async () => {
+                        [domain, nonce] = await createDomainWithPOW()
+                        return `found a domain ${domain}`;
+                    },
+                },
+            ]);
+            //console.debug(domain, nonce); abc
+            const result = await fetch(`${S3S_CLOUD_API}/site/${domain}`, {
+                headers: {
+                    'cache-control': 'no-cache',
+                    'pragma': 'no-cache',
+                    'x-pow-nonce': nonce
+                },
+                'method': 'POST',
+            });
+            if ((result.status/100 | 0) !== 2) {
+                prompts.cancel(`Failed to create an account. Status: ${result.status}`)
+                return
+            }
+            const data = await result.json()
+            //console.debug(data)
+            const msg = (
+                chalk.bold('Your account credentials:\n') +
+                '\tDomain:  ' + chalk.bold.blue(data.domain) +
+                '\n\tAPI Key: ' + chalk.bold.blue(data.api_key) + '\n\n' +
+                chalk.bold.red(`Please keep your credentials in a safe place to keep your account.`) );
+            prompts.log.success(`Account created succcessfully!`)
+            prompts.log.info(msg)
+            while (true) {
+                confirm = await prompts.confirm({message: 'Did you save your credentials in a safe place?'})
+                if (prompts.isCancel(confirm)) {
+                    prompts.cancel('aborted')
+                    return
+                }
+                if (confirm) {
+                    break
+                }
+                prompts.log.error('This is a very bad idea, please save them and try again.')
+            }
+            newAccount.domain = data.domain
+            newAccount.apiKey = data.api_key
+
+        }
+    }
+
+    let domain = newAccount.domain || process.env.S3S_CLOUD_DOMAIN
+    let apiKey = newAccount.apiKey || process.env.S3S_CLOUD_API_KEY
     if (options.deploy) {
         let verified = false
         prompts.log.step('I will deploy your frontend assets to gr8s cloud')
@@ -241,7 +304,7 @@ async function main() {
                 'method': 'GET',
             });
             //console.debug('result', result)
-            verified = result.status === 200
+            verified = (result.status/100 | 0) !== 200
             if (!verified) {
                 domain = ''
                 apiKey = ''
@@ -340,16 +403,9 @@ async function main() {
         let files = await glob(`${dir}/*`)
         files = files.map((f) => f.slice(dir.length+1))
         //console.debug('files=', files)
-        //tmp.setGracefulCleanup()
-        /*
-        const f = tmp.fileSync()
-        console.debug(`created tmp file ${f.name}`)
-        await tar.create({cwd: dir, file: f.name, strict: true, portable: true, noPax: false}, files)
-        const fdata = fs.readFileSync(f.name, {encoding: 'base64'})
-        */
         const fdata = await compressDirectory(dir, files)
-        console.debug(fdata.slice(0, 32))
-        console.debug(`create tar file data ${fdata.slice(0, 64)}`)
+        //console.debug(fdata.slice(0, 32))
+        //console.debug(`create tar file data ${fdata.slice(0, 64)}`)
 
 
         const path = '@gr8s-cloud-files'
@@ -361,8 +417,12 @@ async function main() {
             },
             body: fdata,
         })
-        console.debug('result status', res.status)
-        console.debug('result text', await res.text())
+
+        if ((res.status/100 | 0) !== 2) {
+            prompts.log.error('Unfortunately we cannot deploy your frontend assets at this moment, please try again later')
+        }
+        //console.debug('result status', res.status)
+        //console.debug('result text', await res.text())
 
 
     }
