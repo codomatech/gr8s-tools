@@ -1,4 +1,4 @@
-import * as htmlparser2 from "htmlparser2"
+import * as htmlparser2 from 'htmlparser2'
 import * as fs from 'fs'
 import {diff_match_patch} from './diff_match_patch_uncompressed.js'
 import chalk from 'chalk'
@@ -27,7 +27,7 @@ class HtmlScanner {
         const lines = []
         for (const kv of Object.entries(attrs)) {
             let [name, val] = kv
-            if (name == 'data-href' && tag == 'link') {
+            if (name === 'data-href' && tag === 'link') {
                 name = 'href'
             }
             let text = name
@@ -50,7 +50,7 @@ class HtmlScanner {
     ontext(text) {
         if (this.textReplacement !== undefined) {
             if (this.textReplacement.trim() === text.trim()) {
-                throw Error("It seems your HTML was already processed. Please use this program on raw unprocessed html")
+                throw Error('It seems your HTML was already processed. Please use this program on raw unprocessed html')
             }
 
             this.lines.push(this.textReplacement)
@@ -59,56 +59,56 @@ class HtmlScanner {
         }
 
         if (text.length === 0) {
-            return;
+            return
         }
 
-        this.lines.push(text);
+        this.lines.push(text)
     }
 
     onclosetag(tagname) {
 
         switch (tagname.toLowerCase()) {
-            case 'head': {
-                this.lines.push(`{% for tag in meta_tags %}<meta property="{{ tag[0] }}" content="{{ tag[1] }}">
+        case 'head': {
+            this.lines.push(`{% for tag in meta_tags %}<meta property="{{ tag[0] }}" content="{{ tag[1] }}">
 {% endfor %}
 {% if canonical_url %}<link rel="canonical" href="{{ canonical_url }}" >{% endif %}`)
-                break
-            }
-            case 'main': {
-                this.lines.push(MAIN_PREFIX)
-                this.bodyTextAdded = true
-                break
-            }
-            case 'footer': {
-                this.lines.push(`{% for link in additional_links %}
+            break
+        }
+        case 'main': {
+            this.lines.push(MAIN_PREFIX)
+            this.bodyTextAdded = true
+            break
+        }
+        case 'footer': {
+            this.lines.push(`{% for link in additional_links %}
 <a class="add-link" href="{{ link.url }}">{{ link.title }}</a>
 {% endfor %}`)
-                this.footerLinksAdded = true
-                break
-            }
-            case 'body': {
-                if (this.bodyTextAdded !== true)
-                    this.lines.push(MAIN_PREFIX)
-                if (this.footerLinksAdded !== true)
-                    this.lines.push(`{% for link in additional_links %}
+            this.footerLinksAdded = true
+            break
+        }
+        case 'body': {
+            if (this.bodyTextAdded !== true)
+                this.lines.push(MAIN_PREFIX)
+            if (this.footerLinksAdded !== true)
+                this.lines.push(`{% for link in additional_links %}
     <a class="add-link" href="{{ link.url }}">{{ link.title }}</a>
     {% endfor %}`)
-                const jscode = []
-                if (this.opts.removePrerenderedContent === true) {
-                    jscode.push(`document.querySelectorAll('.prerendered-text').forEach((e) => e.remove())`)
-                }
-                if (this.opts.removePrerenderedLinks === true) {
-                    jscode.push(`document.querySelectorAll('.add-link').forEach((e) => e.remove())`)
-                }
-                if (jscode.length > 0) {
-                    this.lines.push(`  <script>
+            const jscode = []
+            if (this.opts.removePrerenderedContent === true) {
+                jscode.push(`document.querySelectorAll('.prerendered-text').forEach((e) => e.remove())`)
+            }
+            if (this.opts.removePrerenderedLinks === true) {
+                jscode.push(`document.querySelectorAll('.add-link').forEach((e) => e.remove())`)
+            }
+            if (jscode.length > 0) {
+                this.lines.push(`  <script>
   document.addEventListener("DOMContentLoaded", function() {
     ${jscode.join('\n    ')}
   })
   </script>`)
-                }
-                break
             }
+            break
+        }
         }
         if (!['area', 'base', 'br', 'col', 'command', 'embed', 'hr', 'img', 'input', 'keygen', 'link', 'meta', 'param', 'source', 'track', 'wbr'].includes(tagname.toLowerCase()))
             this.lines.push(`</${tagname}>`)
@@ -139,18 +139,18 @@ function prettyPrintDiff(diff) {
             continue
         }
 
-        if (op == 1) {
+        if (op === 1) {
             lines.push(lastText.substring(-16) + chalk.bold.green(text))
             lastWasDiff = true
         }
 
-        if (op == -1) {
+        if (op === -1) {
 
             lines.push(lastText.substring(-16) + chalk.bold.red(text))
             lastWasDiff = true
         }
 
-        if (op == 0 && lastWasDiff) {
+        if (op === 0 && lastWasDiff) {
             lines.push(text.substring(0, 16))
             lastWasDiff = false
             lines.push('\n')
@@ -186,11 +186,11 @@ async function main() {
         .option('-v, --verbose', 'switch on verbose output')
 
 
-    program.parse();
-    const options = program.opts();
+    program.parse()
+    const options = program.opts()
     //console.debug('options=', options)
 
-    prompts.intro('gr8s-cli');
+    prompts.intro('gr8s-cli')
 
     const newAccount = {}
     if (options.signup) {
@@ -209,10 +209,10 @@ async function main() {
                     title: 'we are finding a unique domain for you, this may take some time ...',
                     task: async () => {
                         [domain, nonce] = await createDomainWithPOW()
-                        return `found a domain ${domain}`;
+                        return `found a domain ${domain}`
                     },
                 },
-            ]);
+            ])
             const result = await fetch(`${S3S_CLOUD_API}/site/${domain}`, {
                 headers: {
                     'cache-control': 'no-cache',
@@ -220,7 +220,7 @@ async function main() {
                     'x-pow-nonce': nonce
                 },
                 'method': 'POST',
-            });
+            })
             if ((result.status/100 | 0) !== 2) {
                 prompts.cancel(`Failed to create an account. Status: ${result.status}`)
                 return
@@ -231,7 +231,7 @@ async function main() {
                 chalk.bold('Your account credentials:\n') +
                 '\tDomain:  ' + chalk.bold.blue(data.domain) +
                 '\n\tAPI Key: ' + chalk.bold.blue(data.api_key) + '\n\n' +
-                chalk.bold.red(`Please keep your credentials in a safe place to keep your account.`) );
+                chalk.bold.red(`Please keep your credentials in a safe place to keep your account.`) )
             prompts.log.success(`Account created succcessfully!`)
             prompts.log.info(msg)
             while (true) {
@@ -265,11 +265,11 @@ async function main() {
                 initialValue: '',
                 validate(value) {
                     if (!isValidDomain(value)) {
-                        return `domain name is invalid`;
+                        return `domain name is invalid`
                     }
                     // TODO validate tld
                 },
-            });
+            })
             if (prompts.isCancel(domain)) {
                 prompts.cancel('Operation cancelled.')
                 return
@@ -288,7 +288,7 @@ async function main() {
                         return 'API key looks too short'
                     }
                 },
-            });
+            })
             if (prompts.isCancel(apiKey)) {
                 prompts.cancel('Operation cancelled.')
                 return
@@ -301,7 +301,7 @@ async function main() {
                     'x-api-key': apiKey
                 },
                 'method': 'GET',
-            });
+            })
             //console.debug('result', result)
             verified = (result.status/100 | 0) !== 200
             if (!verified) {
@@ -324,7 +324,7 @@ async function main() {
         const paths = [
             {framework: 'next.js', path: 'out/index.html'},
             {framework: 'nuxt.js', path: 'dist/index.html'},
-        ];
+        ]
         let found
         for (const {framework, path} of paths) {
             if (fs.existsSync(path)) {
@@ -345,17 +345,17 @@ async function main() {
         removePrerenderedLinks: options.js_remove_links === true,
     })
 
-    const parser = new htmlparser2.Parser(scanner);
-    let html = fs.readFileSync(options.index, 'utf-8');
+    const parser = new htmlparser2.Parser(scanner)
+    let html = fs.readFileSync(options.index, 'utf-8')
 
     try {
-        parser.write(html);
+        parser.write(html)
     } catch (e) {
         prompts.log.error(`Error processing the file:\n\t${e.message}`)
         prompts.outro('aborting due to processing errors')
         return
     }
-    parser.end();
+    parser.end()
 
 
     let transformed = scanner.lines.join('\n')
@@ -370,7 +370,7 @@ async function main() {
     const dmp = new diff_match_patch()
     dmp.Diff_Timeout = 1
     const diff = dmp.diff_main(_simplify(html), _simplify(transformed))
-    dmp.diff_cleanupSemantic(diff);
+    dmp.diff_cleanupSemantic(diff)
 
 
     if (options.verbose) {
