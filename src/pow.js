@@ -37,7 +37,7 @@ async function findProofOfWork(data, difficulty) {
 export async function createDomainWithPOW() {
     let nonce, domain
     for (let i=0; i<100; i++) {
-        domain = randomString() + '.gr8s.cloud'
+        domain = randomString() + '.site.gr8s.codoma.tech'
         nonce = await findProofOfWork(domain, 17);
         if (nonce > 0) {
             return [domain, nonce]
