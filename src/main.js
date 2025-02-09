@@ -11,6 +11,33 @@ import * as tmp from 'tmp'
 import { glob } from 'glob'
 import { createDomainWithPOW } from './pow.js'
 
+const TERMS = `Privacy Policy and Terms of Use of cloud services gr8s and S³
+
+Your privacy is important to us. We do not collect, store, or process any
+personal data through our service, except for information that is essential to
+operate and maintain the service. Additionally, we do not share any personal
+information with third parties. Our CDN-like platform operates solely as a data
+transmission service, and no cookies or tracking technologies are employed.
+
+Terms of Use
+
+By using our service, you agree to the following terms:
+
+SERVICE SCOPE: We provide a CDN-like service for data delivery. The availability
+and performance of our service depend on external networks and providers, and we
+cannot guarantee uninterrupted or error-free operation.
+
+LIABILITY: We are not liable for any damages, losses, or interruptions resulting
+from service failures, including those caused by external factors beyond our
+control. Prohibited Use: You may not use our service for illegal, harmful, or
+abusive activities.
+
+CHANGES TO SERVICE: We reserve the right to modify or discontinue the service
+with reasonable advance notice, except in circumstances of force majeure or
+other events beyond our reasonable control.
+
+Use of our service constitutes acceptance of these terms`
+
 
 const MAIN_PREFIX = `{% if gr8s_html_payload %}{{ gr8s_html_payload }}{% else %}<div class="prerendered-text">{{ body_text }}</div>{% endif %}
 {% if gr8s_json_payload %}<script id="gr8s-json-payload" type="application/json">{{ gr8s_json_payload }}</script>{% endif %}
@@ -194,13 +221,21 @@ async function main() {
 
     const newAccount = {}
     if (options.signup) {
+        let confirm
         prompts.log.step('I will create a quick account for you on s3 cloud')
-        let confirm = await prompts.confirm({message: 'proceed with account creation?'})
-        if (prompts.isCancel(confirm)) {
-            prompts.cancel('aborted')
+        //prompts.log.info(TERMS)
+
+        confirm = await prompts.text({
+            message: TERMS + '\n\n---\nDid you read and accept the terms above? Please type YES to confirm.',
+            initialValue: '',
+        })
+
+        if (prompts.isCancel(confirm) || confirm.toLowerCase() !== 'yes') {
+            prompts.cancel('you did not accept the service terms of use, we cannot create an account for you.')
             return
         }
-        if (!confirm || prompts.isCancel(confirm)) {
+
+        if (false && (!confirm || prompts.isCancel(confirm))) {
             prompts.log.info('no account will be created.')
         } else {
             let domain, nonce
