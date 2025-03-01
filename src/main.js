@@ -29,7 +29,9 @@ cannot guarantee uninterrupted or error-free operation.
 
 LIABILITY: We are not liable for any damages, losses, or interruptions resulting
 from service failures, including those caused by external factors beyond our
-control. Prohibited Use: You may not use our service for illegal, harmful, or
+control.
+
+PROHIBITED USE: You may not use our service for illegal, harmful, or
 abusive activities.
 
 CHANGES TO SERVICE: We reserve the right to modify or discontinue the service
