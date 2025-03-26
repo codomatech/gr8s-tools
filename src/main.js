@@ -464,45 +464,49 @@ async function main() {
 
     }
 
-    // check and show deployment info
-    const res = await fetch(`${S3S_CLOUD_API}/site/${domain}/files-list`, {
-        method: 'GET',
-        headers: {
-            'x-api-key': apiKey,
-        },
-    })
+    if (apiKey) {
 
-    if ((res.status/100 | 0) !== 2) {
-        prompts.log.error('Cannot query files at the moment, please try again later')
+        // check and show deployment info
+        const res = await fetch(`${S3S_CLOUD_API}/site/${domain}/files-list`, {
+            method: 'GET',
+            headers: {
+                'x-api-key': apiKey,
+            },
+        })
+
+        let files = []
+        if ((res.status/100 | 0) !== 2) {
+            prompts.log.error('Cannot query files at the moment, please try again later')
+        } else {
+            files = await res.json()
+        }
+
+        let ddomain = '', ds = '', sm = '', n=0
+        for (const f of files) {
+            if (f.startsWith('@deployment ')) {
+                ddomain = 'https://' + f.slice(12)
+            }
+            if (f.startsWith('public__') && f.endsWith('_datasource.json')) {
+                ds = `${S3S_CLOUD_API}/site/${domain}/file/${f}`
+            }
+            if (f.startsWith('public__') && f.endsWith('_sitemap.xml')) {
+                sm = `${S3S_CLOUD_API}/site/${domain}/file/${f}`
+            }
+            if (f.endsWith('.s3s')) {
+                n ++
+            }
+        }
+
+        if (n || ddomain || ds || sm) {
+            prompts.log.info(
+                chalk.bold('Your deployment has the following:\n') +
+                (ddomain? `✨ your site is deployed on CDN at ${chalk.blue(ddomain)}\n`: '') +
+                (!ddomain && ds? `✨ a data source (usable by gr8s server): ${chalk.blue(ds)} \n`: '') +
+                (sm? `✨ a sitemap of your website is ready to use at ${chalk.blue(sm)}\n`: '') +
+                (`✨ ${chalk.blue(n)} S³ projects.\n\tyou can create/edit more at https://s3.app.codoma.tech/ (login with your domain & api key).`)
+            )
+        }
     }
-
-    const files = await res.json()
-    let ddomain = '', ds = '', sm = '', n=0
-    for (const f of files) {
-        if (f.startsWith('@deployment ')) {
-            ddomain = 'https://' + f.slice(12)
-        }
-        if (f.startsWith('public__') && f.endsWith('_datasource.json')) {
-            ds = `${S3S_CLOUD_API}/site/${domain}/file/${f}`
-        }
-        if (f.startsWith('public__') && f.endsWith('_sitemap.xml')) {
-            sm = `${S3S_CLOUD_API}/site/${domain}/file/${f}`
-        }
-        if (f.endsWith('.s3s')) {
-            n ++
-        }
-    }
-
-    if (n || ddomain || ds || sm) {
-        prompts.log.info(
-            chalk.bold('Your deployment has the following:\n') +
-            (ddomain? `✨ your site is deployed on CDN at ${chalk.blue(ddomain)}\n`: '') +
-            (!ddomain && ds? `✨ a data source (usable by gr8s server): ${chalk.blue(ds)} \n`: '') +
-            (sm? `✨ a sitemap of your website is ready to use at ${chalk.blue(sm)}\n`: '') +
-            (`✨ ${chalk.blue(n)} S³ projects.\n\tyou can create/edit more at https://s3.app.codoma.tech/ (login with your domain & api key).`)
-        )
-    }
-
 
     prompts.outro('processing concluded successfully')
 }
