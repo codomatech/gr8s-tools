@@ -39,10 +39,10 @@
         "lint": "eslint src/main.js src/s3s-crawl-assistant.js"
     },
     "dependencies": {
-        "@clack/prompts": "^0.9.0",
-        "chalk": "^5.3.0",
+        "@clack/prompts": "^0.9.1",
+        "chalk": "^5.4.1",
         "commander": "^12.1.0",
-        "glob": "^11.0.0",
+        "glob": "^11.0.1",
         "html-minifier-terser": "^7.2.0",
         "htmlparser2": "^9.1.0",
         "postmate": "^1.5.2",
@@ -51,16 +51,16 @@
         "tmp": "^0.2.3"
     },
     "devDependencies": {
-        "@eslint/js": "^9.5.0",
+        "@eslint/js": "^9.23.0",
         "buffer": "^6.0.3",
-        "eslint": "^9.5.0",
+        "eslint": "^9.23.0",
         "events": "^3.3.0",
-        "globals": "^15.6.0",
+        "globals": "^15.15.0",
         "os-browserify": "^0.3.0",
-        "parcel": "^2.12.0",
+        "parcel": "^2.14.2",
         "path-browserify": "^1.0.1",
         "process": "^0.11.10",
-        "url": "^0.11.3"
+        "url": "^0.11.4"
     },
     "@parcel/resolver-default": {
         "packageExports": true
