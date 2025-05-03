@@ -100,6 +100,7 @@ class HtmlScanner {
         case 'head': {
             this.lines.push(`{% for tag in meta_tags %}<meta property="{{ tag[0] }}" content="{{ tag[1] }}">
 {% endfor %}
+{% if meta_og_description %}<meta name="description" content="{{ meta_og_description }}" >{% endif %}
 {% if canonical_url %}<link rel="canonical" href="{{ canonical_url }}" >{% endif %}`)
             break
         }
@@ -197,9 +198,7 @@ async function compressDirectory(dir, files) {
     return fdata
 }
 
-async function main() {
-    const S3S_CLOUD_API = process.env.S3S_API_ADDRESS || 'https://s3sapi-gr8s.b-cdn.net'
-
+async function parseCommandLineOptions() {
     program
         .name('gr8s-cli')
         .description(`A command to prepare your html code to use with gr8s server. For more details, check:
@@ -214,10 +213,12 @@ async function main() {
         .option('--deploy', 'deploy frontend assets to gr8s cloud. More info at https://s3.app.codoma.tech/')
         .option('-v, --verbose', 'switch on verbose output')
 
-
     program.parse()
-    const options = program.opts()
-    //console.debug('options=', options)
+    return program.opts()
+}
+
+export async function cmd(options) {
+    const S3S_CLOUD_API = process.env.S3S_API_ADDRESS || 'https://s3sapi-gr8s.b-cdn.net'
 
     prompts.intro('gr8s-cli')
 
@@ -225,7 +226,6 @@ async function main() {
     if (options.signup) {
         let confirm
         prompts.log.step('I will create a quick account for you on s3 cloud')
-        //prompts.log.info(TERMS)
 
         confirm = await prompts.text({
             message: TERMS + '\n\n---\nDid you read and accept the terms above? Please type YES to confirm.',
@@ -237,7 +237,7 @@ async function main() {
             return
         }
 
-        if (false && (!confirm || prompts.isCancel(confirm))) {
+        if (!confirm || prompts.isCancel(confirm)) {
             prompts.log.info('no account will be created.')
         } else {
             let domain, nonce
@@ -263,7 +263,6 @@ async function main() {
                 return
             }
             const data = await result.json()
-            //console.debug(data)
             const msg = (
                 chalk.bold('Your account credentials:\n') +
                 '\tDomain:  ' + chalk.bold.blue(data.domain) +
@@ -284,7 +283,6 @@ async function main() {
             }
             newAccount.domain = data.domain
             newAccount.apiKey = data.api_key
-
         }
     }
 
@@ -304,7 +302,6 @@ async function main() {
                     if (!isValidDomain(value)) {
                         return `domain name is invalid`
                     }
-                    // TODO validate tld
                 },
             })
             if (prompts.isCancel(domain)) {
@@ -339,7 +336,6 @@ async function main() {
                 },
                 'method': 'GET',
             })
-            //console.debug('result', result)
             verified = (result.status/100 | 0) !== 200
             if (!verified) {
                 domain = ''
@@ -374,7 +370,7 @@ async function main() {
             prompts.log.error('Failed to find index.html, please specify it explicity')
             return
         }
-        options.index  =found
+        options.index = found
     }
 
     const scanner = new HtmlScanner({
@@ -394,10 +390,8 @@ async function main() {
     }
     parser.end()
 
-
     let transformed = scanner.lines.join('\n')
 
-    // <!doctype html> is not detected by html parser
     const regex = /^<!\s*doctype\s+html\s*>/gim
     const match = html.match(regex)
     if (match) {
@@ -409,7 +403,6 @@ async function main() {
     const diff = dmp.diff_main(_simplify(html), _simplify(transformed))
     dmp.diff_cleanupSemantic(diff)
 
-
     if (options.verbose) {
         prompts.log.info('Enriched index.html. Here is the diff:')
         prompts.log.info('\t' + prettyPrintDiff(diff).replace(/\n/g, '\n\t> '))
@@ -418,7 +411,7 @@ async function main() {
     fs.writeFileSync(bkup, html)
 
     if (options.m) {
-        transformed = await minify(transformed,  {
+        transformed = await minify(transformed, {
             collapseWhitespace: true,
             minifyCSS: true,
             minifyJS: true,
@@ -433,17 +426,13 @@ async function main() {
     prompts.log.info(chalk.bold.blue(`The original source was backed up in ${bkup}`))
     prompts.log.success(`Your gr8s-enabled html file is in ${options.index}.`)
 
-
     if (options.deploy) {
+        // TODO how to run that from the browser?
         prompts.log.step('Deploying your frontend assets to gr8s cloud')
         const dir = $path.dirname(options.index)
         let files = await glob(`${dir}/*`)
         files = files.map((f) => f.slice(dir.length+1))
-        //console.debug('files=', files)
         const fdata = await compressDirectory(dir, files)
-        //console.debug(fdata.slice(0, 32))
-        //console.debug(`create tar file data ${fdata.slice(0, 64)}`)
-
 
         const path = '@gr8s-cloud-files'
         const res = await fetch(`${S3S_CLOUD_API}/site/${domain}/file/${path}`, {
@@ -458,15 +447,10 @@ async function main() {
         if ((res.status/100 | 0) !== 2) {
             prompts.log.error('Unfortunately we cannot deploy your frontend assets at this moment, please try again later')
         }
-        //console.debug('result status', res.status)
-        //console.debug('result text', await res.text())
         prompts.log.success(`${files.length} files deployed successfully!`)
-
     }
 
     if (apiKey) {
-
-        // check and show deployment info
         const res = await fetch(`${S3S_CLOUD_API}/site/${domain}/files-list`, {
             method: 'GET',
             headers: {
@@ -511,5 +495,7 @@ async function main() {
     prompts.outro('processing concluded successfully')
 }
 
-
-main()
+export async function main() {
+    const options = await parseCommandLineOptions()
+    await cmd(options)
+}

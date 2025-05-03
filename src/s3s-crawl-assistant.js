@@ -5,10 +5,16 @@ import Postmate from 'postmate';
     // site. The file is intentionally short (besides the dependency postmate) and
     // unobfuscated for transparency.
     const urlParams = new URLSearchParams(window.location.search)
-    if (urlParams.has('s3-crawler-active')) {
+    if (urlParams.has('__gr8s_s3-crawler-active')) {
         const handshake = new Postmate.Model({
-            pageSource: () => document.body.innerHTML
-        })
+            pageSource: () => `<html>
+<head>
+${document.head.innerHTML}
+</head>
+<body>
+${document.body.innerHTML}
+</body>
+</html>`})
         try {
             window.s3s_crawl_assistant_handshake = handshake
         } catch(e) {

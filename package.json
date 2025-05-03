@@ -1,6 +1,6 @@
 {
     "name": "@codomatech/gr8s-tools",
-    "version": "0.0.21",
+    "version": "0.0.27",
     "license": "MIT",
     "publishConfig": {
         "access": "public"
@@ -15,16 +15,25 @@
         "dist/*/*.js"
     ],
     "bin": {
-        "gr8s-cli": "./dist/cli/main.js"
+        "gr8s-cli": "./dist/cli/cli.js"
     },
     "targets": {
+        "lib": {
+            "context": "node",
+            "includeNodeModules": [
+                "chalk"
+            ],
+            "isLibrary": true,
+            "source": "src/main.js",
+            "outputFormat": "esmodule"
+        },
         "cli": {
             "context": "node",
             "includeNodeModules": [
                 "chalk"
             ],
             "isLibrary": false,
-            "source": "src/main.js"
+            "source": "src/cli.js"
         },
         "s3s-crawl-assistant": {
             "context": "browser",
