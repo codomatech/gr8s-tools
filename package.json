@@ -1,6 +1,6 @@
 {
     "name": "@codomatech/gr8s-tools",
-    "version": "0.0.27",
+    "version": "0.0.28",
     "license": "MIT",
     "publishConfig": {
         "access": "public"
@@ -49,24 +49,24 @@
     },
     "dependencies": {
         "@clack/prompts": "^0.9.1",
-        "chalk": "^5.4.1",
+        "chalk": "^5.6.2",
         "commander": "^12.1.0",
-        "glob": "^11.0.1",
+        "glob": "^11.1.0",
         "html-minifier-terser": "^7.2.0",
         "htmlparser2": "^9.1.0",
         "postmate": "^1.5.2",
         "sleep-await": "^1.0.2",
-        "tar": "^7.4.3",
-        "tmp": "^0.2.3"
+        "tar": "^7.5.2",
+        "tmp": "^0.2.5"
     },
     "devDependencies": {
-        "@eslint/js": "^9.23.0",
+        "@eslint/js": "^9.39.2",
         "buffer": "^6.0.3",
-        "eslint": "^9.23.0",
+        "eslint": "^9.39.2",
         "events": "^3.3.0",
         "globals": "^15.15.0",
         "os-browserify": "^0.3.0",
-        "parcel": "^2.14.2",
+        "parcel": "^2.16.3",
         "path-browserify": "^1.0.1",
         "process": "^0.11.10",
         "url": "^0.11.4"
