@@ -1,6 +1,6 @@
 {
     "name": "@codomatech/gr8s-tools",
-    "version": "0.0.31",
+    "version": "0.0.32",
     "license": "MIT",
     "publishConfig": {
         "access": "public"
@@ -57,7 +57,7 @@
         "postmate": "^1.5.2",
         "sleep-await": "^1.0.3",
         "tar": "^7.5.13",
-        "tmp": "^0.2.5"
+        "tmp": "^0.2.7"
     },
     "devDependencies": {
         "@eslint/js": "^9.39.4",
