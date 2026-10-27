@@ -1,77 +1,71 @@
 {
-    "name": "@codomatech/gr8s-tools",
-    "version": "0.0.32",
-    "license": "MIT",
-    "publishConfig": {
-        "access": "public"
+  "name": "@codomatech/gr8s-tools",
+  "version": "0.0.36",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/codomatech/gr8s-tools"
+  },
+  "description": "A set of tools and utilities to support the operation of gr8s server (https://gr8s-server.codoma.tech/).",
+  "files": [
+    "README.md",
+    "dist/*/*.js"
+  ],
+  "bin": {
+    "gr8s-cli": "./dist/cli/cli.js"
+  },
+  "targets": {
+    "lib": {
+      "context": "node",
+      "includeNodeModules": true,
+      "isLibrary": true,
+      "source": "src/main.js",
+      "outputFormat": "esmodule"
     },
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/codomatech/gr8s-tools"
+    "cli": {
+      "context": "node",
+      "includeNodeModules": true,
+      "isLibrary": false,
+      "source": "src/cli.js"
     },
-    "description": "A set of tools and utilities to support the operation of gr8s server (https://gr8s-server.codoma.tech/).",
-    "files": [
-        "README.md",
-        "dist/*/*.js"
-    ],
-    "bin": {
-        "gr8s-cli": "./dist/cli/cli.js"
-    },
-    "targets": {
-        "lib": {
-            "context": "node",
-            "includeNodeModules": [
-                "chalk"
-            ],
-            "isLibrary": true,
-            "source": "src/main.js",
-            "outputFormat": "esmodule"
-        },
-        "cli": {
-            "context": "node",
-            "includeNodeModules": [
-                "chalk"
-            ],
-            "isLibrary": false,
-            "source": "src/cli.js"
-        },
-        "s3s-crawl-assistant": {
-            "context": "browser",
-            "optimize": false,
-            "outputFormat": "global",
-            "source": "src/s3s-crawl-assistant.js"
-        }
-    },
-    "mode": "usage",
-    "scripts": {
-        "build": "parcel build",
-        "lint": "eslint src/main.js src/s3s-crawl-assistant.js"
-    },
-    "dependencies": {
-        "@clack/prompts": "^0.9.1",
-        "chalk": "^5.6.2",
-        "commander": "^12.1.0",
-        "glob": "^13.0.6",
-        "html-minifier-terser": "^7.2.0",
-        "htmlparser2": "^9.1.0",
-        "postmate": "^1.5.2",
-        "sleep-await": "^1.0.3",
-        "tar": "^7.5.13",
-        "tmp": "^0.2.7"
-    },
-    "devDependencies": {
-        "@eslint/js": "^9.39.4",
-        "buffer": "^6.0.3",
-        "eslint": "^10.1.0",
-        "events": "^3.3.0",
-        "globals": "^15.15.0",
-        "os-browserify": "^0.3.0",
-        "parcel": "^2.16.4",
-        "path-browserify": "^1.0.1",
-        "process": "^0.11.10",
-        "url": "^0.11.4"
-    },
-    "@parcel/resolver-default": {
-        "packageExports": true
+    "s3s-crawl-assistant": {
+      "context": "browser",
+      "optimize": false,
+      "outputFormat": "global",
+      "source": "src/s3s-crawl-assistant.js"
     }
+  },
+  "mode": "usage",
+  "scripts": {
+    "build": "parcel build",
+    "lint": "eslint src/main.js src/s3s-crawl-assistant.js"
+  },
+  "devDependencies": {
+    "@clack/prompts": "^0.9.1",
+    "@eslint/js": "^9.39.4",
+    "buffer": "^6.0.3",
+    "chalk": "^5.6.2",
+    "commander": "^12.1.0",
+    "eslint": "^10.1.0",
+    "events": "^3.3.0",
+    "glob": "^13.0.6",
+    "globals": "^15.15.0",
+    "html-minifier-terser": "^7.2.0",
+    "htmlparser2": "^9.1.0",
+    "os-browserify": "^0.3.0",
+    "parcel": "^2.16.4",
+    "path-browserify": "^1.0.1",
+    "postmate": "^1.5.2",
+    "process": "^0.11.10",
+    "sleep-await": "^1.0.3",
+    "tar": "^7.5.13",
+    "tmp": "^0.2.5",
+    "url": "^0.11.4"
+  },
+  "@parcel/resolver-default": {
+    "packageExports": true
+  }
 }
